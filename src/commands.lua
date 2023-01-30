@@ -47,64 +47,6 @@ function command_handler.getStatus(device)
    
 end
 
-------------------
--- Push
-function command_handler.push(_, device, command)
-   local state = device:get_field("state")
-
-   if state == nil then
-      state = "open"
-      device:set_field("state", state)
-   end
-   log.debug("Push: "..state)
-
-   if state == "open" then
-      device:emit_event(caps.doorControl.door("closing"))
-      state = "close"
-   else
-      device:emit_event(caps.doorControl.door("opening"))
-      state = "open"
-   end 
-
-   log.debug("Push: "..state)   
-   local ventId = device:get_field("ventId")
-      
-   if ventId ~= nil then
-      local token = command_handler.getToken(device)
-      
-      if token ~= "0" then 
-      
-         local apiEndpoint = device:get_field("apiEndpoint")      
-         local url         = apiEndpoint .. "/flairOpenVent.php?token="..token.."&ventId="..ventId.."&state="..state
-         log.debug("URL: "..url)
-
-         local response = {}
-         local _, code = http.request({
-            url=url,
-            sink=ltn12.sink.table(response)
-         })
-         if code == 200 then
-      
-            log.debug("200: Push")
-            response = table.concat(response).."}"
-            log.debug("Response: "..response)
-         
-            device.thread:call_with_delay(
-               30,
-               function() 
-                  command_handler.ventStatus(device,token)
-               end
-            )
-         end
-      else 
-         log.debug("Bad Token")
-      end
-   else 
-      log.debug("Bad Vent Id")   
-   end
-
-end 
-
 
 ----------------
 -- Switch commad
@@ -278,17 +220,14 @@ function command_handler.ventStatus(device, token)
       local jsonData = json.decode(response)
       
       -- door status
-      local open = jsonData["data"]["attributes"]["percent-open"]
+      local level = jsonData["data"]["attributes"]["percent-open"]
       
-      if open == 0 then 
-         log.debug("Door: Closed")
-         device:emit_event(caps.doorControl.door("closed", {state_change = true} ))
-         device:set_field("state", "closed")         
+      if level == 0 then
+         device:emit_event(caps.switch.switch.off({state_change = true}))
       else
-         log.debug("Door: Open")
-         device:emit_event(caps.doorControl.door("open", {state_change = true} ))
-         device:set_field("state", "open")         
+         device:emit_event(caps.switch.switch.on({state_change = true}))
       end
+      device:emit_event(caps.switchLevel.level(level, {state_change = true}))
       
       -- battery 
       local battery        = jsonData["data"]["attributes"]["voltage"]
