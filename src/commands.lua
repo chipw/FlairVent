@@ -219,15 +219,25 @@ function command_handler.ventStatus(device, token)
       
       local jsonData = json.decode(response)
       
-      -- door status
+      -- vent level status
       local level = jsonData["data"]["attributes"]["percent-open"]
       
       if level == 0 then
-         device:emit_event(caps.switch.switch.off({state_change = true}))
+         device:emit_event(caps.switch.switch.off())
       else
-         device:emit_event(caps.switch.switch.on({state_change = true}))
+         device:emit_event(caps.switch.switch.on())
       end
-      device:emit_event(caps.switchLevel.level(level, {state_change = true}))
+      device:emit_event(caps.switchLevel.level(level))
+
+-- do we need to force a state change? will that trigger extra actions from smart apps being notified?
+--      if level == 0 then
+--           device:emit_event(caps.switch.switch.off({state_change = true}))
+--      else
+--           device:emit_event(caps.switch.switch.on({state_change = true}))
+--      end
+--      device:emit_event(caps.switchLevel.level(level, {state_change = true}))
+
+      
       
       -- battery 
       local battery        = jsonData["data"]["attributes"]["voltage"]
