@@ -105,6 +105,106 @@ function command_handler.push(_, device, command)
 
 end 
 
+
+----------------
+-- Switch commad
+function command_handler.on_off(_, device, command)
+  local on_off = command.command
+  local level = command.command
+
+   if on_off == 'off' then
+      device:emit_event(caps.switch.switch.off())
+      level = "0"
+   else
+      device:emit_event(caps.switch.switch.on())
+      level = "100"
+   end 
+
+   command_handler.updateVent(device, level)
+
+end
+
+-----------------------
+-- Switch level command
+function command_handler.set_level(_, device, command)
+  local lvl = command.args.level
+   
+   -- attempt to round for supported levels: 0, 25, 50, 75, 100
+   
+   if (lvl >= 90) and (lvl =< 100) then
+      lvl = 100
+   else
+      if (lvl >= 64) and (lvl =< 89) then
+      lvl = 75
+      else
+         if (lvl >= 37) and (lvl =< 63) then
+         lvl = 50
+         else
+            if (lvl >= 11) and (lvl =< 36) then
+            lvl = 25
+            else
+                if (lvl >= 0) and (lvl =< 10) then
+               lvl = 0
+               end
+            end
+         end
+      end
+   end   
+   
+   if lvl == 0 then
+      device:emit_event(caps.switch.switch.off())
+   else
+      device:emit_event(caps.switch.switch.on())
+   end
+      
+   device:emit_event(caps.switchLevel.level(lvl))
+   
+   command_handler.updateVent(device, lvl)
+   
+end
+
+-- Update Vent level command
+function command_handler.updateVent(device, level)
+   --log.debug("Push: "..level)   
+   local ventId = device:get_field("ventId")
+      
+   if ventId ~= nil then
+      local token = command_handler.getToken(device)
+      
+      if token ~= "0" then 
+      
+         local apiEndpoint = device:get_field("apiEndpoint")      
+         local url         = apiEndpoint .. "/flair/flairOpenVent.php?token="..token.."&ventId="..ventId.."&state="..level
+         log.debug("URL: "..url)
+
+         local response = {}
+         local _, code = http.request({
+            url=url,
+            sink=ltn12.sink.table(response)
+         })
+         if code == 200 then
+      
+            log.debug("200: Push")
+            response = table.concat(response).."}"
+            log.debug("Response: "..response)
+         
+            device.thread:call_with_delay(
+               30,
+               function() 
+                  command_handler.ventStatus(device,token)
+               end
+            )
+         end
+      else 
+         log.debug("Bad Token")
+      end
+   else 
+      log.debug("Bad Vent Id")   
+   end
+end
+
+
+
 -----------------
 -- Get Auth Token
 function command_handler.getToken(device)
@@ -119,7 +219,7 @@ function command_handler.getToken(device)
    -- local data     = clientId.."&"..secret.."&"..scope.."&grant_type=client_credentials"
    -- url = url..data
    local apiEndpoint = device:get_field("apiEndpoint")
-   local url = apiEndpoint.."/flairToken.php"
+   local url = apiEndpoint.."/flair/flairToken.php"
    
    log.debug("URL: "..url)
   
@@ -157,7 +257,7 @@ function command_handler.ventStatus(device, token)
    local response = {}
    local ventId = device:get_field("ventId")
    local apiEndpoint = device:get_field("apiEndpoint")
-   local url = apiEndpoint .. "/flairVentStatus.php?token="..token.."&ventId="..ventId
+   local url = apiEndpoint .. "/flair/flairVentStatus.php?token="..token.."&ventId="..ventId
    
    log.debug("URL: "..url)
   
