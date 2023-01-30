@@ -33,9 +33,9 @@ function discovery.handle_discovery(driver, _should_continue)
             type = "LAN",
             device_network_id = id,
             label = name,
-            profile = "flairVent.v1",
-            manufacturer = "josep",
-            model = "v1",
+            profile = "flairVent.v2",
+            manufacturer = "josep-cw",
+            model = "v2",
             vendor_provided_label = name
          }
          driver:call_with_delay(
