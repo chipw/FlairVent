@@ -16,11 +16,17 @@ local driver =
       discovery          = discovery.handle_discovery,
       lifecycle_handlers = lifecycles,
       supported_capabilities = {
-        caps.doorControl,
+        caps.switch,
+        caps.switchLevel,
         caps.battery,
         caps.refresh
       },
       capability_handlers = {
+     -- Switch command handler
+        [caps.switch.ID] = {
+          [caps.switch.commands.on.NAME] = commands.on_off,
+          [caps.switch.commands.off.NAME] = commands.on_off
+        },
       
         -- Refresh command handler
         [caps.refresh.ID] = {
@@ -28,9 +34,9 @@ local driver =
         },
         
         -- Push
-        [caps.doorControl.ID] = {
-           [caps.doorControl.commands.open.NAME]  = commands.push,
-           [caps.doorControl.commands.close.NAME] = commands.push
+        [caps.switchLevel.ID] = {
+           [caps.switchLevel.commands.setLevel.NAME]  = commands.set_level --,
+           --[caps.switchLevel.commands.close.NAME] = commands.push
         }
         
       }
