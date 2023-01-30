@@ -4,13 +4,13 @@ local http   = cosock.asyncify "socket.http"
 local json   = require('dkjson')
 local ltn12  = require('ltn12')
 
-local apiEndpoint = "http://192.168.1.24:6969"
+local apiEndpoint = "http://192.168.1.2:80"
 local discovery = {}
 
 function discovery.handle_discovery(driver, _should_continue)
    log.info("Starting Flair Vent Discovery")
 
-   local url = apiEndpoint .. "/flairFindVents.php"
+   local url = apiEndpoint .. "/flair/flairFindVents.php"
    local response = {}
    local _, code = http.request({
       url=url,
